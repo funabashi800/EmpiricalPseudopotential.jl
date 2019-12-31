@@ -6,35 +6,47 @@ const Rydberg = 13.6
 
 const Material = Dict(
     "Si" => Dict(
-        "C11" => 10,
-        "C12" => 10,
-        "Fs" => Dict(
-            3 => -0.21 * Q * Rydberg,
-            4 => 0 * Q *  Rydberg,
-            8 => 0.04 * Q * Rydberg,
-            11 => 0.08 * Q * Rydberg,
+        "latticeconstant" => 5.431e-10,
+        "elasticconstant" => Dict(
+            "C11" => 1660,
+            "C12" => 640,
+            "C44" => 796,
         ),
-        "Fa" => Dict(
-            3 => 0.00 * Rydberg,
-            4 => 0.00 * Rydberg,
-            8 => 0.00 * Rydberg,
-            11 => 0.00 * Rydberg,
+        "pseudopotential" => Dict(
+            "Fs" => Dict(
+                3 => -0.21 * Q * Rydberg,
+                4 => 0 * Q *  Rydberg,
+                8 => 0.04 * Q * Rydberg,
+                11 => 0.08 * Q * Rydberg,
+            ),
+            "Fa" => Dict(
+                3 => 0.00 * Rydberg,
+                4 => 0.00 * Rydberg,
+                8 => 0.00 * Rydberg,
+                11 => 0.00 * Rydberg,
+            )
         )
     ),
     "Ge" => Dict(
-        "C11" => 10,
-        "C12" => 10,
-        "Fs" => Dict(
-            3 => -0.230 * Q * Rydberg,
-            4 => 0 * Q * Rydberg,
-            8 => 0.01 * Q * Rydberg,
-            11 => 0.06 * Q * Rydberg,
+        "latticeconstant" => 5.658e-10,
+        "elasticconstant" => Dict(
+            "C11" => 1260,
+            "C12" => 440,
+            "C44" => 677,
         ),
-        "Fa" => Dict(
-            3 => 0.00 * Rydberg,
-            4 => 0.00 * Rydberg,
-            8 => 0.00 * Rydberg,
-            11 => 0.00 * Rydberg,
+        "pseudopotential" => Dict(
+            "Fs" => Dict(
+                3 => -0.230 * Q * Rydberg,
+                4 => 0 * Q * Rydberg,
+                8 => 0.01 * Q * Rydberg,
+                11 => 0.06 * Q * Rydberg,
+            ),
+            "Fa" => Dict(
+                3 => 0.00 * Rydberg,
+                4 => 0.00 * Rydberg,
+                8 => 0.00 * Rydberg,
+                11 => 0.00 * Rydberg,
+            )
         )
     ),
     "GaAs" => Dict(

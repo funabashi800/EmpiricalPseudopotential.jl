@@ -98,12 +98,12 @@ struct Gm
     end
 end
 
-struct Strain
+mutable struct Strain
     vertical::Float64
     parallel::Float64
 end
 
-struct Material
+mutable struct Material
     name::String
     Fs::Dict{Int, Float64}
     Fa::Dict{Int, Float64}
@@ -147,29 +147,30 @@ function mix(name::String, material1::Material, alloy1::Float64,  material2::Mat
         println("Total alloy composition should be 1.0")
         exit()
     end
-    material = Material(name, material1.latticetype)
-    material.latticeconstant = material1.latticeconstant * alloy1 + material2 * alloy2
+    material = Material(material1.name, material1.latticetype)
+    material.latticeconstant = material1.latticeconstant * alloy1 + material2.latticeconstant * alloy2
     material.strainedlatticeconstant.parallel = material.latticeconstant
     material.strainedlatticeconstant.vertical = material.latticeconstant
-    for (k, v) in keys(material.Fs)
+    for k in keys(material.Fs)
         material.Fs[k] = material1.Fs[k] * alloy1 + material2.Fs[k] * alloy2
         material.Fa[k] = material1.Fa[k] * alloy1 + material2.Fs[k] * alloy2
     end
-    for (k, v) in keys(material.elasticconstant)
+    for k in keys(material.elasticconstant)
         material.elasticconstant[k] = material1.elasticconstant[k] * alloy1 + material2.elasticconstant[k] * alloy2
     end
     return material
 end
 
-function strain(material::Material, by::Float64, percent=1000)
+function strain(material::Material, by::Float64=material.latticeconstant; percent=1000)
     if percent !== 1000
         if 100.0 < abs(percent)
             println("Strain rate should be in range of -100 ~ 100")
             exit()
         end
         material.strainedlatticeconstant.parallel = material.latticeconstant * (100 + percent)/100
+    else
+        material.strainedlatticeconstant.parallel = by
     end
-    material.strainedlatticeconstant.parallel = by
 
     material.strainedlatticeconstant.vertical =
         material.latticeconstant * (
@@ -290,7 +291,7 @@ function EigenEnergy(material::Material, kpoints=40)::Matrix{Float64}
     return E
 end
 
-function bandstructure(E::Matrix{Float64}; fielname="pseudopotential", show=false)
+function BandStructure(E::Matrix{Float64}; fielname="pseudopotential", show=false)
     plots = Array{PlotlyBase.AbstractTrace,1}()
     for ii in 1:9
         push!(plots, scatter(;x=[iknum for iknum in 1:40], y=E[ii, :], mode="lines"))
@@ -304,7 +305,7 @@ function bandstructure(E::Matrix{Float64}; fielname="pseudopotential", show=fals
     end	
 end
 
-function bandgap(E::Matrix{Float64})
+function BandGap(E::Matrix{Float64})
     valenceband = E[4, :]
     conductionband = E[5, :]
     G = trunc(Int, length(conductionband)/2)

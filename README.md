@@ -6,9 +6,67 @@
 
 This repo aims to calculate band structure for semiconductor by using empirical pseudo potential 
 
-![Emprical Pseudopotential](test/pseudopotential.png)
+![Emprical Pseudopotential](test/GaAs.png)
 
+# Installation
+```julia
+using Pkg
+Pkg.add(https://github.com/funabashi800/EmpiricalPseudopotential.jl.git)
+```
 
+# Usage
+
+## Bulk
+```julia
+# Define material
+InSb = p.Material("InSb", "fcc")
+
+# Calculate pseudo potential
+E = p.EigenEnergy(InSb)
+
+# Plot band structure
+p.BandStructure(E, fielname="InSb")
+
+# Calculate band gap
+p.BandGap(E
+```
+
+## Strain effect(Biaxial strain)
+```julia
+# Define material
+InSb = p.Material("InSb", "fcc")
+# calculate strained lattice constant
+# e.g. strain(Material, percent=0.1%) or strain(Material, by=6.379e-10)
+p.strain(InSb, percent=0.5)
+
+# Calculate pseudo potential
+E = p.EigenEnergy(InSb)
+
+# Plot band structure
+p.BandStructure(E, fielname="InSb")
+
+# Calculate band gap
+p.BandGap(E)
+```
+
+## Ternary Material
+```julia
+# Define materials
+InSb = p.Material("InSb", "fcc")
+GaSb = p.Material("GaSb", "fcc")
+
+# Generate ternary material from above two materials with each alloy
+InGaSb = p.mix("InGaSb", InSb, 0.4, GaSb, 0.6)
+
+# Calculate pseudo potential
+E = p.EigenEnergy(InGaSb)
+
+# Plot band structure
+p.BandStructure(E, fielname="InGaSb")
+
+# Calculate band gap
+p.BandGap(E)
+```
 
 # Reference
 
