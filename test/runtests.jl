@@ -7,7 +7,7 @@ const p = EmpiricalPseudopotential
         InSb = p.Material("InSb", "fcc")
         E = p.EigenEnergy(InSb)
 
-        p.BandStructure(E, fielname="InSb")
+        #p.BandStructure(E, fielname="InSb")
 
         p.BandGap(E)
     end
@@ -17,7 +17,7 @@ const p = EmpiricalPseudopotential
         p.strain(InSb, percent=0.5)
         E = p.EigenEnergy(InSb)
 
-        p.BandStructure(E, fielname="InSb")
+        #p.BandStructure(E, fielname="InSb")
 
         p.BandGap(E)
     end
@@ -26,7 +26,7 @@ const p = EmpiricalPseudopotential
         GaP = p.Material("GaP", "fcc")
         E = p.EigenEnergy(GaP)
 
-        p.BandStructure(E, fielname="GaP")
+        #p.BandStructure(E, fielname="GaP")
 
         p.BandGap(E)
     end
@@ -36,7 +36,7 @@ const p = EmpiricalPseudopotential
 
         E = p.EigenEnergy(GaAs)
 
-        p.BandStructure(E, fielname="GaAs")
+        #p.BandStructure(E, fielname="GaAs")
 
         p.BandGap(E)
     end
@@ -49,7 +49,7 @@ const p = EmpiricalPseudopotential
 
         E = p.EigenEnergy(InGaSb)
 
-        p.BandStructure(E, fielname="InGaSb")
+        #p.BandStructure(E, fielname="InGaSb")
 
         p.BandGap(E)
     end
