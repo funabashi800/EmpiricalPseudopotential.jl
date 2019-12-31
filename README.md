@@ -6,7 +6,7 @@
 
 This repo aims to calculate band structure for semiconductor by using empirical pseudo potential 
 
-![Emprical Pseudopotential](test/GaAs.png)
+![Emprical Pseudopotential](GaAs.png)
 
 # Installation
 ```julia
