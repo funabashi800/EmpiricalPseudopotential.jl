@@ -12,6 +12,9 @@ This repo aims to calculate band structure for semiconductor by using empirical 
 ```julia
 using Pkg
 Pkg.add(https://github.com/funabashi800/EmpiricalPseudopotential.jl.git)
+
+using EmpiricalPseudopotential
+const p = EmpiricalPseudopotential
 ```
 
 # Usage

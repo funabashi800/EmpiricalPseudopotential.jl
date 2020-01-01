@@ -252,7 +252,7 @@ function EigenEnergy(material::Material, kpoints=40)::Matrix{Float64}
     # Hamiltonian's diagnonal factor
     for K in sorted
         for KK in K[2]
-            push!(diagonal, strained * KK * 2pi/material.latticeconstant)
+            push!(diagonal, KK * 2pi/material.latticeconstant)
         end
     end
 
@@ -275,7 +275,7 @@ function EigenEnergy(material::Material, kpoints=40)::Matrix{Float64}
         # G -> X
         else
             dk = strained * (2pi/material.latticeconstant) / (kpoints - G)
-            ddk = dk * (k - G)
+            ddk = dk * (k - G - 1)
             for i in 1:51
                 H[i, i] = (HBAR^2/2M * ( [ddk 0 0] + diagonal[i] ) * ( [ddk 0 0] + diagonal[i] )')[1,1]
             end
@@ -284,7 +284,7 @@ function EigenEnergy(material::Material, kpoints=40)::Matrix{Float64}
         end
     end
 
-    e0 = maximum(E[4, :])
+    e0 = E[4, G]
     f(x) = real(x - e0)
     E = f.(E)
 
@@ -294,7 +294,7 @@ end
 function BandStructure(E::Matrix{Float64}; fielname="pseudopotential", show=false)
     plots = Array{PlotlyBase.AbstractTrace,1}()
     for ii in 1:9
-        push!(plots, scatter(;x=[iknum for iknum in 1:40], y=E[ii, :], mode="lines"))
+        push!(plots, scatter(;x=[iknum for iknum in 1:length(E[ii, :])], y=E[ii, :], mode="lines"))
     end
     layout = Layout(title="GaAs Bulk Emprical Psuedo Potential", autosize=true, showlegend=false)
     if show == true

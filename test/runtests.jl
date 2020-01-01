@@ -5,7 +5,7 @@ const p = EmpiricalPseudopotential
 
     @testset "Bulk InSb" begin
         InSb = p.Material("InSb", "fcc")
-        E = p.EigenEnergy(InSb)
+        E = p.EigenEnergy(InSb, 500)
 
         #p.BandStructure(E, fielname="InSb")
 
