@@ -5,11 +5,12 @@ const p = EmpiricalPseudopotential
 
     @testset "Bulk InSb" begin
         InSb = p.Material("InSb", "fcc")
-        E = p.EigenEnergy(InSb, 500)
+        band = p.EigenEnergy(InSb, 500)
 
-        #p.BandStructure(E, fielname="InSb")
+        #p.BandPlot(E, fielname="InSb")
 
-        p.BandGap(E)
+        p.BandGap(band)
+        p.EffectiveMass(band, 200, 300)
     end
 
     @testset "Strain InSb" begin
@@ -17,7 +18,7 @@ const p = EmpiricalPseudopotential
         p.strain(InSb, percent=0.5)
         E = p.EigenEnergy(InSb)
 
-        #p.BandStructure(E, fielname="InSb")
+        #p.BandPlot(E, fielname="InSb")
 
         p.BandGap(E)
     end
@@ -26,7 +27,7 @@ const p = EmpiricalPseudopotential
         GaP = p.Material("GaP", "fcc")
         E = p.EigenEnergy(GaP)
 
-        #p.BandStructure(E, fielname="GaP")
+        #p.BandPlot(E, fielname="GaP")
 
         p.BandGap(E)
     end
@@ -34,11 +35,12 @@ const p = EmpiricalPseudopotential
     @testset "GaAs" begin
         GaAs = p.Material("GaAs", "fcc")
 
-        E = p.EigenEnergy(GaAs)
+        band = p.EigenEnergy(GaAs, 500)
 
-        #p.BandStructure(E, fielname="GaAs")
+        #p.BandPlot(E, fielname="GaAs")
 
-        p.BandGap(E)
+        p.BandGap(band)
+        p.EffectiveMass(band, 200, 300)
     end
 
     @testset "Ternary Material" begin
@@ -49,7 +51,7 @@ const p = EmpiricalPseudopotential
 
         E = p.EigenEnergy(InGaSb)
 
-        #p.BandStructure(E, fielname="InGaSb")
+        #p.BandPlot(E, fielname="InGaSb")
 
         p.BandGap(E)
     end

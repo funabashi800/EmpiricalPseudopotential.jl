@@ -241,13 +241,20 @@ function Hamiltonian(material::Material)::Matrix{ComplexF64}
     return hamiltonian
 end
 
-function EigenEnergy(material::Material, kpoints=40)::Matrix{Float64}
+struct BandStructure
+    energy::Matrix{Float64}
+    kpoints::Vector{Float64}
+end
+
+function EigenEnergy(material::Material, kpoints=40)::BandStructure
     sorted = sort(collect(material.reciprocalvector), by=x->x[1])
     diagonal = Vector{Matrix{Float64}}()
 
     strained = material.latticeconstant^3 / (
         material.strainedlatticeconstant.parallel^2 * material.strainedlatticeconstant.vertical
     )
+
+    kvector = Vector{Float64}()
 
     # Hamiltonian's diagnonal factor
     for K in sorted
@@ -267,6 +274,7 @@ function EigenEnergy(material::Material, kpoints=40)::Matrix{Float64}
         if k < G+1
             dk = strained * (pi/material.latticeconstant) / G
             ddk = dk * (k - 1)
+            push!(kvector, pi/material.strainedlatticeconstant.parallel-ddk)
             for i in 1:51
                 H[i, i] = (HBAR^2/2M * ( [(pi/material.strainedlatticeconstant.parallel)-ddk (pi/material.strainedlatticeconstant.parallel)-ddk (pi/material.strainedlatticeconstant.vertical)-ddk] + diagonal[i] ) * ( [(pi/material.strainedlatticeconstant.parallel)-ddk (pi/material.strainedlatticeconstant.parallel)-ddk (pi/material.strainedlatticeconstant.vertical)-ddk] + diagonal[i] )')[1,1]
             end
@@ -276,6 +284,7 @@ function EigenEnergy(material::Material, kpoints=40)::Matrix{Float64}
         else
             dk = strained * (2pi/material.latticeconstant) / (kpoints - G)
             ddk = dk * (k - G - 1)
+            push!(kvector, ddk)
             for i in 1:51
                 H[i, i] = (HBAR^2/2M * ( [ddk 0 0] + diagonal[i] ) * ( [ddk 0 0] + diagonal[i] )')[1,1]
             end
@@ -288,13 +297,13 @@ function EigenEnergy(material::Material, kpoints=40)::Matrix{Float64}
     f(x) = real(x - e0)
     E = f.(E)
 
-    return E
+    return BandStructure(E, kvector)
 end
 
-function BandStructure(E::Matrix{Float64}; fielname="pseudopotential", show=false)
+function BandPlot(band::BandStructure; fielname="pseudopotential", show=false)
     plots = Array{PlotlyBase.AbstractTrace,1}()
     for ii in 1:9
-        push!(plots, scatter(;x=[iknum for iknum in 1:length(E[ii, :])], y=E[ii, :], mode="lines"))
+        push!(plots, scatter(;x=[iknum for iknum in 1:length(band.energy[ii, :])], y=band.energy[ii, :], mode="lines"))
     end
     layout = Layout(title="GaAs Bulk Emprical Psuedo Potential", autosize=true, showlegend=false)
     if show == true
@@ -305,11 +314,39 @@ function BandStructure(E::Matrix{Float64}; fielname="pseudopotential", show=fals
     end	
 end
 
-function BandGap(E::Matrix{Float64})
-    valenceband = E[4, :]
-    conductionband = E[5, :]
+function BandGap(band::BandStructure)
+    valenceband = band.energy[4, :]
+    conductionband = band.energy[5, :]
     G = trunc(Int, length(conductionband)/2)
-    println(conductionband[G] - valenceband[G], " [eV]")
+    println("Band Gap : ", conductionband[G] - valenceband[G], " [eV]")
+end
+
+# y = ax^2 + bx = c
+function quadraticInterpolation(x::Vector{Float64}, y::Vector{Float64})
+    quartic(x) = x^4
+    cubic(x) = x^3
+    quadratic(x) = x^2
+    X =
+    [
+        sum(quartic.(x)) sum(cubic.(x)) sum(quadratic.(x));
+        sum(cubic.(x)) sum(quadratic.(x)) sum(x);
+        sum(quadratic.(x)) sum(x) length(x);
+    ] 
+    Y = 
+    [
+        sum( (quadratic.(x))' * y );
+        sum(x'*y);
+        sum(y);
+    ]
+    a,b,c = X' * Y
+    return a,b,c
+end
+
+# return electron effective mass
+function EffectiveMass(band::BandStructure, from, to)
+    conductionband = band.energy[5, :]
+    a,b,c = quadraticInterpolation(band.kpoints[from:to], conductionband[from:to])
+    println("Effective Mass : ", M^2 * a)
 end
 
 end
