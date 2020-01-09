@@ -43,13 +43,16 @@ InSb = p.Material("InSb", "fcc")
 p.strain(InSb, percent=0.5)
 
 # Calculate pseudo potential
-E = p.EigenEnergy(InSb)
+band = p.EigenEnergy(InSb, 500)
 
 # Plot band structure
-p.BandStructure(E, fielname="InSb")
+p.BandPlot(band, title="InSb")
 
 # Calculate band gap
-p.BandGap(E)
+gap = p.BandGap(band)
+
+# Calculate Effective Mass
+mass = p.EffectiveMass(band, 200, 300)
 ```
 
 ## Ternary Material
@@ -65,7 +68,7 @@ InGaSb = p.mix("InGaSb", InSb, 0.4, GaSb, 0.6)
 E = p.EigenEnergy(InGaSb)
 
 # Plot band structure
-p.BandStructure(E, fielname="InGaSb")
+p.BandPlot(E, title="InGaSb")
 
 # Calculate band gap
 p.BandGap(E)

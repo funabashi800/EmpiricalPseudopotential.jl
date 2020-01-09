@@ -11,8 +11,8 @@ const Q = 1.60217662e-19
 
 using DataStructures: DefaultDict
 using LinearAlgebra
-using PlotlyJS
-using ORCA
+using Plots
+plotlyjs()
 
 const specialpaths = Dict(
     "sc" => "GXMGRX",
@@ -44,9 +44,9 @@ const specialpoints = Dict(
 )
 
 struct Magnitude
-    m1::Int
-    m2::Int
-    m3::Int
+    m1::Float64
+    m2::Float64
+    m3::Float64
     function Magnitude(i, j, t)
         new(i, j, t)
     end
@@ -89,7 +89,7 @@ const latticetypes = ["fcc", "bcc", "sc"]
 
 # Reciprocal lattice vector
 struct Gm
-    magnitude::Int
+    magnitude::Float64
     vector::Matrix{Float64}
     function Gm(b::BasicLatticeVector, m::Magnitude)
         gm = b.b1 * m.m1 + b.b2 * m.m2 + b.b3 * m.m3
@@ -105,14 +105,14 @@ end
 
 mutable struct Material
     name::String
-    Fs::Dict{Int, Float64}
-    Fa::Dict{Int, Float64}
+    Fs::Dict{Float64, Float64}
+    Fa::Dict{Float64, Float64}
     elasticconstant::Dict{String, Float64}
     latticetype::String
     latticeconstant::Float64
     strainedlatticeconstant::Strain
     vector::BasicLatticeVector
-    reciprocalvector::DefaultDict{Int, Vector{Matrix{Int}}}
+    reciprocalvector::DefaultDict{Float64, Vector{Matrix{Float64}}}
     function Material(name, latticetype)
         if !(latticetype in latticetypes)
             println("Lattice Type is invalid")
@@ -131,7 +131,7 @@ mutable struct Material
                 db.Material[name]["latticeconstant"]
             ),
             BasicLatticeVector(latticetype),
-            DefaultDict{Int, Vector{Matrix{Int}}}(Vector{Matrix{Int}})
+            DefaultDict{Float64, Vector{Matrix{Float64}}}(Vector{Matrix{Float64}})
         )
         reciprocalvector(obj)
         return obj
@@ -147,18 +147,18 @@ function mix(name::String, material1::Material, alloy1::Float64,  material2::Mat
         println("Total alloy composition should be 1.0")
         exit()
     end
-    material = Material(material1.name, material1.latticetype)
-    material.latticeconstant = material1.latticeconstant * alloy1 + material2.latticeconstant * alloy2
-    material.strainedlatticeconstant.parallel = material.latticeconstant
-    material.strainedlatticeconstant.vertical = material.latticeconstant
-    for k in keys(material.Fs)
-        material.Fs[k] = material1.Fs[k] * alloy1 + material2.Fs[k] * alloy2
-        material.Fa[k] = material1.Fa[k] * alloy1 + material2.Fs[k] * alloy2
+    ternary = Material(material1.name, material1.latticetype)
+    ternary.latticeconstant = material1.latticeconstant * alloy1 + material2.latticeconstant * alloy2
+    ternary.strainedlatticeconstant.parallel = ternary.latticeconstant
+    ternary.strainedlatticeconstant.vertical = ternary.latticeconstant
+    for k in keys(ternary.Fs)
+        ternary.Fs[k] = material1.Fs[k] * alloy1 + material2.Fs[k] * alloy2
+        ternary.Fa[k] = material1.Fa[k] * alloy1 + material2.Fs[k] * alloy2
     end
-    for k in keys(material.elasticconstant)
-        material.elasticconstant[k] = material1.elasticconstant[k] * alloy1 + material2.elasticconstant[k] * alloy2
+    for k in keys(ternary.elasticconstant)
+        ternary.elasticconstant[k] = material1.elasticconstant[k] * alloy1 + material2.elasticconstant[k] * alloy2
     end
-    return material
+    return ternary
 end
 
 function strain(material::Material, by::Float64=material.latticeconstant; percent=1000)
@@ -192,28 +192,38 @@ end
 
 # tau
 function tau(material::Material)::Matrix{Float64}
-    return material.latticeconstant * [1/8 1/8 1/8]
+    return [material.strainedlatticeconstant.parallel/8 material.strainedlatticeconstant.parallel/8 material.strainedlatticeconstant.vertical/8]
 end
 
 # Ss(Km-Kn)
-function Ss(Km::Matrix{Int}, Kn::Matrix{Int}, material::Material)
-    return cos((Km - Kn) * tau(material)' * 2pi/material.latticeconstant)
+function Ss(Km::Matrix{Float64}, Kn::Matrix{Float64}, material::Material)
+    tmp = (Km - Kn)
+    tmp[1, 1] *= 2pi/material.strainedlatticeconstant.parallel
+    tmp[1, 2] *= 2pi/material.strainedlatticeconstant.parallel
+    tmp[1, 3] *= 2pi/material.strainedlatticeconstant.vertical
+    tmp *= tau(material)'
+    return cos(tmp)
 end
 
 # Sa(Km-Kn)
-function Sa(Km::Matrix{Int}, Kn::Matrix{Int}, material::Material)
-    return sin((Km - Kn) * tau(material)' * 2pi/material.latticeconstant)
+function Sa(Km::Matrix{Float64}, Kn::Matrix{Float64}, material::Material)
+    tmp = (Km - Kn)
+    tmp[1, 1] *= 2pi/material.strainedlatticeconstant.parallel
+    tmp[1, 2] *= 2pi/material.strainedlatticeconstant.parallel
+    tmp[1, 3] *= 2pi/material.strainedlatticeconstant.vertical
+    tmp *= tau(material)'
+    return sin(tmp)
 end
 
 # V(Km-Kn)
-function V(Km::Matrix{Int}, Kn::Matrix{Int}, material::Material)
+function V(Km::Matrix{Float64}, Kn::Matrix{Float64}, material::Material)
     K = Km - Kn
     m = K[1]^2 + K[2]^2 + K[3]^2
     strained = material.latticeconstant^3 / (
         material.strainedlatticeconstant.parallel^2 * material.strainedlatticeconstant.vertical
     )
     if m in [0,3,4,8,11]
-        return (Ss(Km, Kn, material) * material.Fs[m] - im * Sa(Km, Kn, material) * material.Fa[m])[1, 1] * strained
+        return (Ss(Km, Kn, material) * material.Fs[m] * strained - im * Sa(Km, Kn, material) * material.Fa[m])[1, 1] * strained
     else
         return Complex(0.0)
     end
@@ -250,18 +260,23 @@ function EigenEnergy(material::Material, kpoints=40)::BandStructure
     sorted = sort(collect(material.reciprocalvector), by=x->x[1])
     diagonal = Vector{Matrix{Float64}}()
 
-    strained = material.latticeconstant^3 / (
-        material.strainedlatticeconstant.parallel^2 * material.strainedlatticeconstant.vertical
-    )
-
     kvector = Vector{Float64}()
+
+
+    A = [1/material.strainedlatticeconstant.parallel 0 0;
+        0 1/material.strainedlatticeconstant.parallel 0;
+        0 0 1/material.strainedlatticeconstant.vertical;]
 
     # Hamiltonian's diagnonal factor
     for K in sorted
         for KK in K[2]
-            push!(diagonal, KK * 2pi/material.latticeconstant)
+            push!(diagonal, KK * A' * 2pi)
         end
     end
+
+    strained = material.latticeconstant^3 / (
+        material.strainedlatticeconstant.parallel^2 * material.strainedlatticeconstant.vertical
+    )
 
     # setup Hamiltonian
     H = Hamiltonian(material)
@@ -273,8 +288,8 @@ function EigenEnergy(material::Material, kpoints=40)::BandStructure
         # L -> G
         if k < G+1
             dk = strained * (pi/material.latticeconstant) / G
-            ddk = dk * (k - 1)
-            push!(kvector, pi/material.strainedlatticeconstant.parallel-ddk)
+            ddk = dk * (k * strained - 1)
+            push!(kvector, strained*pi/material.latticeconstant - ddk)
             for i in 1:51
                 H[i, i] = (HBAR^2/2M * ( [(pi/material.strainedlatticeconstant.parallel)-ddk (pi/material.strainedlatticeconstant.parallel)-ddk (pi/material.strainedlatticeconstant.vertical)-ddk] + diagonal[i] ) * ( [(pi/material.strainedlatticeconstant.parallel)-ddk (pi/material.strainedlatticeconstant.parallel)-ddk (pi/material.strainedlatticeconstant.vertical)-ddk] + diagonal[i] )')[1,1]
             end
@@ -283,7 +298,7 @@ function EigenEnergy(material::Material, kpoints=40)::BandStructure
         # G -> X
         else
             dk = strained * (2pi/material.latticeconstant) / (kpoints - G)
-            ddk = dk * (k - G - 1)
+            ddk = dk * (k*strained - G - 1)
             push!(kvector, ddk)
             for i in 1:51
                 H[i, i] = (HBAR^2/2M * ( [ddk 0 0] + diagonal[i] ) * ( [ddk 0 0] + diagonal[i] )')[1,1]
@@ -300,25 +315,44 @@ function EigenEnergy(material::Material, kpoints=40)::BandStructure
     return BandStructure(E, kvector)
 end
 
-function BandPlot(band::BandStructure; fielname="pseudopotential", show=false)
-    plots = Array{PlotlyBase.AbstractTrace,1}()
-    for ii in 1:9
-        push!(plots, scatter(;x=[iknum for iknum in 1:length(band.energy[ii, :])], y=band.energy[ii, :], mode="lines"))
+function Plot(x::Vector{Float64}, y::Vector{Float64}, title="Strained Electron Effective Mass";show=false)
+    try
+        if show == false
+            plot(x, y, title=title, legend=false)
+            tmp = split(title)
+            filename = join(tmp, "_")
+            savefig("$(filename).png")
+        else
+            plot(x, y, title=title, legend=false)
+        end
+    catch e
+        println(e)
     end
-    layout = Layout(title="GaAs Bulk Emprical Psuedo Potential", autosize=true, showlegend=false)
-    if show == true
-        plot(plots, layout)
-    else
-        p = Plot(plots, layout)
-        savefig(p, "$fielname.png")
-    end	
+end
+
+function BandPlot(band::BandStructure; title="Band Structure", show=false)
+    try
+        plot([iknum for iknum in 1:length(band.energy[1, :])], band.energy[1, :], title=title, legend=false)
+        for ii in 2:9
+            plot!([iknum for iknum in 1:length(band.energy[ii, :])], band.energy[ii, :], title=title, legend=false)
+        end
+        if show == false
+            tmp = split(title)
+            filename = join(tmp, "_")
+            savefig("$filename.png")
+        end
+    catch e
+        println(e)
+    end
 end
 
 function BandGap(band::BandStructure)
     valenceband = band.energy[4, :]
     conductionband = band.energy[5, :]
     G = trunc(Int, length(conductionband)/2)
-    println("Band Gap : ", conductionband[G] - valenceband[G], " [eV]")
+    gap = conductionband[G] - valenceband[G]
+    println("Band Gap : ", gap, " [eV]")
+    return gap
 end
 
 # y = ax^2 + bx = c
@@ -346,7 +380,9 @@ end
 function EffectiveMass(band::BandStructure, from, to)
     conductionband = band.energy[5, :]
     a,b,c = quadraticInterpolation(band.kpoints[from:to], conductionband[from:to])
-    println("Effective Mass : ", M^2 * a)
+    emass = M^2 * a
+    println("Effective Mass : ", emass)
+    return emass
 end
 
 end
